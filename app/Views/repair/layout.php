@@ -25,9 +25,11 @@ $ui = [
     'en' => [
         'nav.dashboard' => 'Dashboard',
         'nav.tickets' => 'Tickets',
+        'nav.ticket_create' => 'Create Ticket',
         'nav.assets' => 'Assets',
         'nav.movements' => 'Movements',
         'nav.parts' => 'Parts',
+        'nav.exchange_create' => 'Create Exchange',
         'nav.quality' => 'Quality',
         'nav.people' => 'People',
         'nav.settings_user' => 'Settings User',
@@ -126,9 +128,11 @@ $ui = [
     'es' => [
         'nav.dashboard' => 'Tablero',
         'nav.tickets' => 'Tickets',
+        'nav.ticket_create' => 'Crear Ticket',
         'nav.assets' => 'Activos',
         'nav.movements' => 'Movimientos',
         'nav.parts' => 'Partes',
+        'nav.exchange_create' => 'Crear Intercambio',
         'nav.quality' => 'Calidad',
         'nav.people' => 'Personas',
         'nav.settings_user' => 'Ajustes Usuario',
@@ -227,9 +231,11 @@ $ui = [
     'pt' => [
         'nav.dashboard' => 'Painel',
         'nav.tickets' => 'Chamados',
+        'nav.ticket_create' => 'Criar Chamado',
         'nav.assets' => 'Ativos',
         'nav.movements' => 'Movimentos',
         'nav.parts' => 'Pecas',
+        'nav.exchange_create' => 'Criar Troca',
         'nav.quality' => 'Qualidade',
         'nav.people' => 'Pessoas',
         'nav.settings_user' => 'Config Usuario',
@@ -241,9 +247,11 @@ $ui = [
     'it' => [
         'nav.dashboard' => 'Dashboard',
         'nav.tickets' => 'Ticket',
+        'nav.ticket_create' => 'Crea Ticket',
         'nav.assets' => 'Asset',
         'nav.movements' => 'Movimenti',
         'nav.parts' => 'Parti',
+        'nav.exchange_create' => 'Crea Scambio',
         'nav.quality' => 'Qualita',
         'nav.people' => 'Persone',
         'nav.settings_user' => 'Impostazioni Utente',
@@ -322,9 +330,11 @@ $labelOf = static function (string $value, array $map, string $lang): string {
     <nav>
       <a href="<?= site_url('app/dashboard') ?>?user=<?= esc($user) ?>"><?= esc($u('nav.dashboard')) ?></a>
       <a href="<?= site_url('app/tickets') ?>?user=<?= esc($user) ?>"><?= esc($u('nav.tickets')) ?></a>
+      <a href="<?= site_url('app/ticket-create') ?>?user=<?= esc($user) ?>"><?= esc($u('nav.ticket_create')) ?></a>
       <a href="<?= site_url('app/assets') ?>?user=<?= esc($user) ?>"><?= esc($u('nav.assets')) ?></a>
       <a href="<?= site_url('app/movements') ?>?user=<?= esc($user) ?>"><?= esc($u('nav.movements')) ?></a>
       <a href="<?= site_url('app/parts-requests') ?>?user=<?= esc($user) ?>"><?= esc($u('nav.parts')) ?></a>
+      <a href="<?= site_url('app/exchange/create') ?>?user=<?= esc($user) ?>"><?= esc($u('nav.exchange_create')) ?></a>
       <a href="<?= site_url('app/nonconformities') ?>?user=<?= esc($user) ?>"><?= esc($u('nav.quality')) ?></a>
       <a href="<?= site_url('app/people') ?>?user=<?= esc($user) ?>"><?= esc($u('nav.people')) ?></a>
       <a href="<?= site_url('app/settings/user') ?>?user=<?= esc($user) ?>"><?= esc($u('nav.settings_user')) ?></a>
@@ -348,6 +358,7 @@ $labelOf = static function (string $value, array $map, string $lang): string {
     <section class="mobile-nav">
       <a href="<?= site_url('app/dashboard') ?>?user=<?= esc($user) ?>"><?= esc($u('nav.home')) ?></a>
       <a href="<?= site_url('app/tickets') ?>?user=<?= esc($user) ?>"><?= esc($u('nav.tickets')) ?></a>
+      <a href="<?= site_url('app/ticket-create') ?>?user=<?= esc($user) ?>"><?= esc($u('nav.ticket_create')) ?></a>
       <a href="<?= site_url('app/assets') ?>?user=<?= esc($user) ?>"><?= esc($u('nav.assets')) ?></a>
       <a href="<?= site_url('app/movements') ?>?user=<?= esc($user) ?>"><?= esc($u('nav.move')) ?></a>
       <a href="<?= site_url('app/settings/user') ?>?user=<?= esc($user) ?>"><?= esc($u('nav.user')) ?></a>

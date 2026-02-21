@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use CodeIgniter\Controller;
+use CodeIgniter\Database\Exceptions\DatabaseException;
 use CodeIgniter\HTTP\CLIRequest;
 use CodeIgniter\HTTP\IncomingRequest;
 use CodeIgniter\HTTP\RequestInterface;
@@ -69,37 +70,45 @@ abstract class BaseController extends Controller
             return;
         }
 
-        $db = db_connect();
-        $userId = (int) ($session->get('current_user_id') ?? 0);
-        if ($userId <= 0) {
-            $user = $db->table('rm_user')->select('id')->orderBy('id')->get(1)->getRowArray();
-            if ($user) {
-                $userId = (int) $user['id'];
-                $session->set('current_user_id', $userId);
+        try {
+            $db = db_connect();
+            if (! $db->tableExists('rm_user')) {
+                $session->set('prefs_loaded', true);
+                return;
             }
-        }
 
-        if ($userId > 0) {
-            $userInfo = $db->table('rm_user')
-                ->select('full_name, username')
-                ->where('id', $userId)
-                ->get()
-                ->getRowArray();
-            if ($userInfo) {
-                $session->set('current_user_name', (string) $userInfo['full_name']);
-                $session->set('current_username', (string) $userInfo['username']);
-            }
-        }
-
-        if ($userId > 0 && $db->tableExists('rm_userpreference')) {
-            $prefs = $db->table('rm_userpreference')->where('rm_user_id', $userId)->get()->getRowArray();
-            if ($prefs) {
-                $locale = (string) ($prefs['rm_default_locale'] ?? '');
-                if ($locale !== '' && in_array($locale, self::SUPPORTED_LOCALES, true)) {
-                    $session->set('locale', $locale);
+            $userId = (int) ($session->get('current_user_id') ?? 0);
+            if ($userId <= 0) {
+                $user = $db->table('rm_user')->select('id')->orderBy('id')->get(1)->getRowArray();
+                if ($user) {
+                    $userId = (int) $user['id'];
+                    $session->set('current_user_id', $userId);
                 }
-                $session->set('default_site_id', (int) ($prefs['rm_default_site_id'] ?? 0));
             }
+
+            if ($userId > 0) {
+                $userInfo = $db->table('rm_user')
+                    ->select('full_name, username')
+                    ->where('id', $userId)
+                    ->get()
+                    ->getRowArray();
+                if ($userInfo) {
+                    $session->set('current_user_name', (string) $userInfo['full_name']);
+                    $session->set('current_username', (string) $userInfo['username']);
+                }
+            }
+
+            if ($userId > 0 && $db->tableExists('rm_userpreference')) {
+                $prefs = $db->table('rm_userpreference')->where('rm_user_id', $userId)->get()->getRowArray();
+                if ($prefs) {
+                    $locale = (string) ($prefs['rm_default_locale'] ?? '');
+                    if ($locale !== '' && in_array($locale, self::SUPPORTED_LOCALES, true)) {
+                        $session->set('locale', $locale);
+                    }
+                    $session->set('default_site_id', (int) ($prefs['rm_default_site_id'] ?? 0));
+                }
+            }
+        } catch (DatabaseException) {
         }
 
         $session->set('prefs_loaded', true);

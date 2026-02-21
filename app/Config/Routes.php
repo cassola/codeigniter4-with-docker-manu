@@ -5,8 +5,8 @@ use CodeIgniter\Router\RouteCollection;
 /**
  * @var RouteCollection $routes
  */
-$routes->get('/', 'Dashboard::index');
-$routes->get('dashboard', 'Dashboard::index');
+$routes->get('/', 'Home::index');
+$routes->get('dashboard', 'Home::index');
 $routes->get('lang/(:segment)', 'Language::set/$1');
 $routes->get('settings', 'Settings::index');
 $routes->post('settings', 'Settings::save');

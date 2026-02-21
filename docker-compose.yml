@@ -2,8 +2,6 @@ networks:
   docker.network:
     driver: bridge
 
-volumes:
-  mysql_data:
 
 services:
   php:
