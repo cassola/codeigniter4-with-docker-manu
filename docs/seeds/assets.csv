@@ -1,0 +1,3 @@
+rm_serialnumber,rm_modelcode,rm_status,rm_currentownertype
+SN-ES-0001,MDL-CTRL-100,InRepair,CustomerPlant
+SN-IT-0009,MDL-HMI-300,InTransit,CompanySite

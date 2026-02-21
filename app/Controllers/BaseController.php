@@ -21,6 +21,8 @@ use Psr\Log\LoggerInterface;
  */
 abstract class BaseController extends Controller
 {
+    private const SUPPORTED_LOCALES = ['es', 'pt', 'en', 'it'];
+
     /**
      * Instance of the main Request object.
      *
@@ -35,7 +37,7 @@ abstract class BaseController extends Controller
      *
      * @var list<string>
      */
-    protected $helpers = [];
+    protected $helpers = ['url'];
 
     /**
      * Be sure to declare properties for any property fetch you initialized.
@@ -51,8 +53,55 @@ abstract class BaseController extends Controller
         // Do Not Edit This Line
         parent::initController($request, $response, $logger);
 
-        // Preload any models, libraries, etc, here.
+        $this->loadUserPreferencesFromDb();
 
-        // E.g.: $this->session = \Config\Services::session();
+        $locale = session('locale');
+        if (is_string($locale) && in_array($locale, self::SUPPORTED_LOCALES, true)) {
+            service('request')->setLocale($locale);
+            service('language')->setLocale($locale);
+        }
+    }
+
+    private function loadUserPreferencesFromDb(): void
+    {
+        $session = session();
+        if ($session->get('prefs_loaded') === true) {
+            return;
+        }
+
+        $db = db_connect();
+        $userId = (int) ($session->get('current_user_id') ?? 0);
+        if ($userId <= 0) {
+            $user = $db->table('rm_user')->select('id')->orderBy('id')->get(1)->getRowArray();
+            if ($user) {
+                $userId = (int) $user['id'];
+                $session->set('current_user_id', $userId);
+            }
+        }
+
+        if ($userId > 0) {
+            $userInfo = $db->table('rm_user')
+                ->select('full_name, username')
+                ->where('id', $userId)
+                ->get()
+                ->getRowArray();
+            if ($userInfo) {
+                $session->set('current_user_name', (string) $userInfo['full_name']);
+                $session->set('current_username', (string) $userInfo['username']);
+            }
+        }
+
+        if ($userId > 0 && $db->tableExists('rm_userpreference')) {
+            $prefs = $db->table('rm_userpreference')->where('rm_user_id', $userId)->get()->getRowArray();
+            if ($prefs) {
+                $locale = (string) ($prefs['rm_default_locale'] ?? '');
+                if ($locale !== '' && in_array($locale, self::SUPPORTED_LOCALES, true)) {
+                    $session->set('locale', $locale);
+                }
+                $session->set('default_site_id', (int) ($prefs['rm_default_site_id'] ?? 0));
+            }
+        }
+
+        $session->set('prefs_loaded', true);
     }
 }

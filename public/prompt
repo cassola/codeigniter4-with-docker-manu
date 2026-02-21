@@ -1,0 +1,198 @@
+Eres un desarrollador senior en Codeigniter 4 y Microsoft Power Platform (Dataverse + Power Apps + Power Automate). 
+Genera una solución completa para gestión de tickets de reparación electrónica multi-sede, con apariencia y UX coherentes con Power Apps (Model-Driven App estándar: command bar, vistas, formularios con pestañas/secciones, subgrids, dashboards). 
+
+IMPORTANTE!! vas a realizar la aplicacion utilizando el fremework Codeigniter 4 ya montado en este directorio.
+Simula el estilo Power App en las paginas.
+En lugar de Dataverse utiliza mysql.
+Esta aplicación sirve de modelo para constgruir más adelante la verdadera en Soluciones de PowerApp.
+
+
+OBJETIVO
+Construir una solución Dataverse llamada "RepairManagement" (prefijo rm_) con:
+1) Tablas (Dataverse) + columnas + choices + relaciones + claves alternas
+2) Model-driven app con sitemap, vistas, formularios, subgrids, dashboards
+3) Power Automate flows mínimos (status history; defaults por sede; opcional ownership maintenance)
+4) Reglas de negocio (Business Rules) para campos requeridos condicionales
+5) Datos de ejemplo (semillas) para 4 sedes
+6) Instrucciones de despliegue usando Power Platform CLI (pac) y estructura de ficheros sugerida
+
+REQUISITOS FUNCIONALES (FLUJO)
+- El almacén de una sede recibe el equipo y genera un Nº aviso SAP único POR SEDE.
+- El técnico crea el ticket introduciendo: IntakeSite + SAPNoticeNumber (obligatorios) + ClientePlanta + Nº serie (Asset).
+- Debe evitar duplicados: Alternate Key compuesta (IntakeSite, SAPNoticeNumber).
+- El ticket puede cambiar de sede para reparación: IntakeSite (origen) y CurrentProcessingSite (sede que lo está gestionando ahora). 
+- Trazabilidad de localización física del activo: Asset.CurrentLocationSite.
+- Registrar historial de estados del ticket automáticamente al cambiar Status.
+- Registrar material usado por ticket.
+- Registrar avería reportada, avería detectada, solución.
+- Propiedad del activo puede cambiar (opcional, fase 2) con tabla de histórico AssetOwnership.
+
+REQUISITOS DE VISIBILIDAD / SEGURIDAD
+- Todos los usuarios internos ven todos los tickets, históricos, soluciones y estadísticas (Organization-level read).
+- No hay acceso externo de clientes.
+- Usar un único Business Unit "Global". Seguridad mediante roles: RM_Technician, RM_Coordinator, RM_Admin.
+- Técnicos pueden crear/editar tickets y materiales; lectura de maestras. Coordinadores pueden editar maestras. Admin full.
+
+REQUISITOS DE CONFIGURACIÓN POR SEDE
+- Existe una tabla rm_siteconfiguration con 1 registro por sede (Alternate Key en rm_site).
+- Existe un perfil rm_employeeprofile para establecer HomeSite por usuario.
+- Al crear ticket, si IntakeSite viene vacío, usar HomeSite del creador.
+- Aplicar defaults por sede al ticket (ej. status inicial, prioridad, checklist template).
+
+MODELO DE DATOS (TABLAS Y CAMPOS)
+A) Maestras
+1) rm_site:
+- rm_sitecode (Text, Required, Alternate Key)
+- rm_name (Text, Required)
+- rm_country (Text/Choice)
+2) rm_customer:
+- rm_customercode (Text, Required, Alternate Key)
+- rm_legalname (Text, Required)
+- rm_tradename (Text, Optional)
+3) rm_customerplant:
+- rm_plantcode (Text, Required, Alternate Key)
+- rm_customer (Lookup rm_customer, Required)
+- rm_name (Text, Required)
+4) rm_productmodel:
+- rm_modelcode (Text, Required, Alternate Key)
+- rm_description (Text, Required)
+5) rm_material:
+- rm_partnumber (Text, Required, Alternate Key)
+- rm_description (Text, Required)
+- rm_unit (Choice)
+
+B) Operativas
+6) rm_asset:
+- rm_serialnumber (Text, Required, Alternate Key)
+- rm_model (Lookup rm_productmodel, Required)
+- rm_status (Choice: InCustomer/InTransit/InRepair/InStock/Scrap)
+- rm_currentownertype (Choice: CustomerPlant/CompanySite)
+- rm_currentownerplant (Lookup rm_customerplant, Optional)
+- rm_currentownersite (Lookup rm_site, Optional)
+- rm_currentlocationsite (Lookup rm_site, Optional)
+
+7) rm_assetownership (opcional fase 2):
+- rm_asset (Lookup rm_asset, Required)
+- rm_ownertype (Choice)
+- rm_ownerplant (Lookup rm_customerplant, Optional)
+- rm_ownersite (Lookup rm_site, Optional)
+- rm_startdate (DateTime, Required)
+- rm_enddate (DateTime, Optional)
+- rm_reason (Choice)
+- rm_relatedticket (Lookup rm_repairticket, Optional)
+
+8) rm_repairticket:
+- rm_intakesite (Lookup rm_site, Required)
+- rm_currentprocessingsite (Lookup rm_site, Required, default = intake site)
+- rm_sapnoticenumber (Text, Required)
+- Alternate Key: (rm_intakesite, rm_sapnoticenumber)
+- rm_customerplant (Lookup rm_customerplant, Required)
+- rm_asset (Lookup rm_asset, Required)
+- rm_receivedon (DateTime, Required default now)
+- rm_reportedfailure (Multiline, Required)
+- rm_detectedfailure (Multiline, Optional)
+- rm_repairsln (Multiline, Optional)
+- rm_status (Choice: Received/Diagnosis/WaitingParts/RepairInProgress/Testing/ReadyToShip/Shipped/Closed/Cancelled)
+- rm_priority (Choice)
+- rm_assignedto (Lookup System User, Optional)
+- rm_closedon (DateTime, Optional)
+- rm_iswarranty (Yes/No)
+- rm_isnonrepairable (Yes/No)
+- rm_replacementgiven (Yes/No)
+- rm_replacementasset (Lookup rm_asset, Optional)
+- rm_closurecode (Choice: Repaired/NonRepairable/ReturnedUnrepaired/Replacement/Other)
+- Adjuntos: habilitar Notes; opcional File column rm_testreport (File)
+
+9) rm_ticketstatushistory:
+- rm_ticket (Lookup rm_repairticket, Required)
+- rm_fromstatus (Choice)
+- rm_tostatus (Choice, Required)
+- rm_changedby (Lookup System User, Required)
+- rm_changedat (DateTime, Required)
+- rm_comment (Multiline)
+
+10) rm_ticketmaterial:
+- rm_ticket (Lookup rm_repairticket, Required)
+- rm_material (Lookup rm_material, Required)
+- rm_qty (Decimal, Required)
+- rm_usedby (Lookup System User, Optional)
+- rm_usedat (DateTime, Required default now)
+- rm_comment (Multiline)
+
+11) rm_siteconfiguration:
+- rm_site (Lookup rm_site, Required, Unique via Alternate Key)
+- rm_defaultpriority (Choice)
+- rm_defaultticketstatus (Choice)
+- rm_close_requires_solution (Yes/No)
+- rm_require_testreport_on_close (Yes/No)
+- rm_default_test_checklist (Multiline)
+
+12) rm_employeeprofile:
+- rm_user (Lookup System User, Required, Unique)
+- rm_homesite (Lookup rm_site, Required)
+- rm_can_override_site (Yes/No)
+
+13) rm_assetmovement (muy recomendado para transferencias):
+- rm_asset (Lookup rm_asset, Required)
+- rm_fromsite (Lookup rm_site, Required)
+- rm_tosite (Lookup rm_site, Required)
+- rm_movementtype (Choice: InterSiteTransfer/InterSiteReturn/ShipmentToCustomer/ReceiptFromCustomer)
+- rm_relatedticket (Lookup rm_repairticket, Optional)
+- rm_movedat (DateTime, Required default now)
+- rm_notes (Multiline)
+
+UI / APARIENCIA (POWER APPS STYLE)
+- Model-driven app “Repair Management”
+- Sitemap con áreas: Tickets, Assets, Customers, Master Data, Reports, Admin
+- Formularios con pestañas (tabs): Intake, Diagnosis, Repair, Logistics, History
+- Subgrids en Ticket: Materials, Status History, Movements (si existe)
+- En Asset: Tickets relacionados, OwnershipHistory, Movements
+- Vistas: Open Tickets, Tickets by Site, Waiting Parts, Closed with Solution, Transferred Tickets
+- Dashboards: Tickets by Status, Tickets by Site, Top Models (via asset->model), Materials usage (básico)
+- Usar layout clásico: campos en 2 columnas, secciones colapsables, y command bar con acciones: “Transfer to Site”, “Add Material”, “Mark Shipped”, “Close Ticket”
+- “Transfer to Site” debe actualizar rm_currentprocessingsite y crear un movimiento (rm_assetmovement) + cambiar status a Transferred (o usar ReadyToReturnToOrigin/ReadyToShip según tu diseño)
+
+BUSINESS RULES
+- Ticket: si rm_replacementgiven = true => rm_replacementasset requerido
+- Asset: si currentownertype=CustomerPlant => currentownerplant requerido; si CompanySite => currentownersite requerido
+- Ticket: si SiteConfiguration.close_requires_solution=true y status pasa a Closed => repairsln requerido (si no, impedir/corregir)
+- Ticket: currentprocessingsite default = intakesite
+
+POWER AUTOMATE FLOWS (MINIMO)
+1) Flow: Log Ticket Status Changes
+- Trigger: Dataverse When row added or modified on rm_repairticket
+- Condition: rm_status changed
+- Action: create rm_ticketstatushistory record (from previous value, to new, by Modified By, changedat=utcNow)
+
+2) Flow: Apply Site Defaults on Ticket Create
+- Trigger: When row added on rm_repairticket
+- If intakesite is null => lookup employeeprofile of creator and set intakesite=homesite
+- Lookup siteconfiguration for intakesite
+- Apply defaults if fields empty: priority, status, checklist template
+- Ensure currentprocessingsite set to intakesite if empty
+
+3) Flow (opcional): Create Asset Movement on Transfer
+- Trigger: When rm_currentprocessingsite changes
+- Create rm_assetmovement From=previous, To=new, type=InterSiteTransfer/Return
+- Update asset.currentlocationsite = new site
+
+ENTREGABLES
+- Estructura de carpetas propuesta para repositorio (Solution export, flows, docs)
+- Script/pasos CLI con pac:
+  - pac auth create ...
+  - pac solution init/add-reference
+  - (si procede) pac solution import/export commands
+- Documentación breve: cómo importar la solución y activar flows
+- Seed data: 4 sedes (ES-CAST, IT-MOD, PT-XXX, FR-XXX) + 2 clientes + 3 plantas + 3 modelos + 5 materiales + 2 assets + 2 tickets de ejemplo
+
+IMPORTANTE
+- No inventes conectores SAP ni integración automática con SAP: el nº SAP lo introduce el técnico.
+- No uses portal externo.
+- Prioriza un MVP que funcione end-to-end y sea fácil de mantener.
+
+Devuélveme:
+1) Especificación técnica (tablas, campos, choices, relaciones, keys)
+2) Definición de la model-driven app (sitemap, forms, views, dashboards)
+3) Definición detallada de los flows (pasos, condiciones, acciones)
+4) Pasos exactos de despliegue
+5) Datos de ejemplo (CSV o pseudocódigo de carga)

@@ -1,4 +1,4 @@
-FROM nginx:1.25-alpine
+FROM nginx:1.29.5-alpine3.23
 
 ENV TZ=${TZ:-UTC}
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone

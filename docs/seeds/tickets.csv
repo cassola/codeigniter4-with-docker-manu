@@ -1,0 +1,3 @@
+rm_intakesite,rm_sapnoticenumber,rm_currentprocessingsite,rm_customerplant,rm_asset,rm_status,rm_priority
+ES-CAST,SAP-ES-10001,ES-CAST,PLANT-ES-01,SN-ES-0001,Diagnosis,High
+IT-MOD,SAP-IT-20009,FR-XXX,PLANT-IT-01,SN-IT-0009,WaitingParts,Medium

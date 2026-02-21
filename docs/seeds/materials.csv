@@ -1,0 +1,6 @@
+rm_partnumber,rm_description,rm_unit
+MAT-CAP-100,Capacitor 100uF,Unit
+MAT-RES-10K,Resistor 10K,Unit
+MAT-IC-555,Timer IC 555,Unit
+MAT-FAN-24V,Cooling Fan 24V,Unit
+MAT-CONN-8P,Connector 8 pin,Unit

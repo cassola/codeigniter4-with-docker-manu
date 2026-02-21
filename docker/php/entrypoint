@@ -1,7 +1,20 @@
 #!/usr/bin/env bash
 
-set -e
+set -euo pipefail
 
-# composer install -o --working-dir="$WORKDIR"
+: "${WORKDIR:=/var/www}"
 
-php-fpm
+if [[ ! -d "$WORKDIR" ]]; then
+  echo "ERROR: WORKDIR '$WORKDIR' does not exist." >&2
+  exit 1
+fi
+
+if [[ "${COMPOSER_INSTALL:-0}" != "0" ]]; then
+  if [[ -f "$WORKDIR/composer.json" ]]; then
+    composer install -o --no-interaction --no-progress --working-dir="$WORKDIR"
+  else
+    echo "WARN: $WORKDIR/composer.json not found; skipping composer install." >&2
+  fi
+fi
+
+exec php-fpm

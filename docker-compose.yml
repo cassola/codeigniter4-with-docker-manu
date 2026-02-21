@@ -1,5 +1,3 @@
-version: "3.7"
-
 networks:
   docker.network:
     driver: bridge
@@ -11,7 +9,8 @@ services:
     container_name: docker.php
     tty: true
     depends_on:
-      - mysql
+      mysql:
+        condition: service_healthy
       # - postgres
       # - redis
     networks:
@@ -35,7 +34,7 @@ services:
       - .:/var/www
 
   mysql:
-    image: mysql:5
+    image: mysql:8.4.8
     restart: unless-stopped
     container_name: docker.mysql
     tty: true
@@ -45,12 +44,18 @@ services:
       - docker.network
     volumes:
       - "./docker/mysql/mysql.cnf:/etc/mysql/conf.d/custom.cnf:ro"
-      - "./docker/mysql/dbdata:/var/lib/mysql"
+      - mysql_data:/var/lib/mysql
     environment:
       MYSQL_DATABASE: ${MYSQL_DATABASE:-development}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-mysql}
       MYSQL_USER: ${MYSQL_USER:-mysql}
+    healthcheck:
+      test: ["CMD-SHELL", "mysql -uroot -p$${MYSQL_ROOT_PASSWORD} -e 'SELECT 1' >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
 
   # nginx:
   #   build: ./docker/nginx
@@ -85,20 +90,21 @@ services:
   #      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-mysql}
   #      MYSQL_USER: ${MYSQL_USER:-mysql}
 
-  # phpmyadmin:
-  #   image: phpmyadmin
-  #   container_name: docker.phpmyadmin
-  #   tty: true
-  #   depends_on:
-  #     - mysql
-  #   ports:
-  #     - "8080:80"
-  #   networks:
-  #     - docker.network
-  #   environment:
-  #     PMA_HOST: mysql
-  #     PMA_ARBITRARY: 1
-  #     PMA_PORT: 3306
+  phpmyadmin:
+    image: phpmyadmin:5.2.3-apache
+    container_name: docker.phpmyadmin
+    tty: true
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "8080:80"
+    networks:
+      - docker.network
+    environment:
+      PMA_HOST: mysql
+      PMA_ARBITRARY: 1
+      PMA_PORT: 3306
 
   # postgres:
   #   image: postgres:15-alpine
@@ -115,7 +121,6 @@ services:
   #     POSTGRES_USER: ${POSTGRES_USER:-postgres}
   #     POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
   #     POSTGRES_DB: ${POSTGRES_DB:-development}
-
   # pgadmin:
   #   image: dpage/pgadmin4
   #   container_name: docker.pgadmin
@@ -144,3 +149,6 @@ services:
   #   environment:
   #     ALLOW_EMPTY_PASSWORD: ${REDIS_ALLOW_EMPTY_PASSWORD:-no}
   #     REDIS_PASSWORD: ${REDIS_PASSWORD:-redis}
+
+volumes:
+  mysql_data:

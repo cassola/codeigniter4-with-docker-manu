@@ -1,5 +1,5 @@
 # From
-FROM php:8.3.4-fpm-alpine3.19
+FROM php:8.4.16-fpm-alpine3.23
 
 # Labels
 LABEL creatorName="Vagner dos Santos Cardoso"
@@ -13,15 +13,15 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 RUN set -eux \
   && apk add --no-cache \
   git vim zip unzip bash curl tzdata icu-libs \
-  c-client make ca-certificates imap gmp gettext libssh2 yaml \
-  libintl libxslt libpng libwebp libjpeg-turbo freetype imap \
+  make ca-certificates gmp gettext libssh2 yaml \
+  libintl libxslt libpng libwebp libjpeg-turbo freetype \
   linux-headers oniguruma libxslt libpq vips \
   gmp libzip libxml2 freetds
 
 # Install dependencies
 RUN set -eux \
   && apk add --no-cache --virtual .build_deps \
-  libpng-dev libwebp-dev libjpeg-turbo-dev freetype-dev imap-dev \
+  libpng-dev libwebp-dev libjpeg-turbo-dev freetype-dev \
   linux-headers oniguruma-dev libxslt-dev postgresql-dev vips-dev \
   libssh2-dev gmp-dev libzip-dev libxml2-dev freetds-dev yaml-dev \
   $PHPIZE_DEPS \
@@ -47,7 +47,6 @@ RUN set -eux \
   sysvsem \
   sysvshm \
   opcache \
-  imap \
   gmp \
   \
   # Install xdebug
@@ -83,7 +82,7 @@ RUN set -eux \
   && rm -rf /var/cache/apk/*
 
 # Install composer
-COPY --from=composer:latest /usr/bin/composer /usr/local/bin/composer
+COPY --from=composer:2.9.5 /usr/bin/composer /usr/local/bin/composer
 
 # Copy php settings
 COPY ./php.ini ${PHP_INI_DIR}/conf.d/99-php.ini
@@ -93,7 +92,7 @@ COPY ./entrypoint /usr/local/bin/docker-entrypoint
 RUN chmod +x /usr/local/bin/docker-entrypoint
 
 # Workdir
-ENV WORKDIR=/var/www/app
+ENV WORKDIR=/var/www
 RUN mkdir -p ${WORKDIR}
 WORKDIR ${WORKDIR}
 

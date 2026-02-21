@@ -1,4 +1,4 @@
-FROM httpd:2.4-alpine
+FROM httpd:2.4.66-alpine3.23
 
 ENV TZ=${TZ:-UTC}
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
@@ -17,7 +17,5 @@ WORKDIR ${APP_ROOT}
 RUN mkdir -p ${DOCUMENT_ROOT}
 RUN chmod -R +rw ${DOCUMENT_ROOT}
 RUN chown -R ${APACHE_RUN_USER}:${APACHE_RUN_USER} ${DOCUMENT_ROOT}
-
-RUN ln -s ${APP_ROOT}/public/index.php ${DOCUMENT_ROOT}
 
 COPY ./httpd.conf /usr/local/apache2/conf/httpd.conf
