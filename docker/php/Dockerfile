@@ -1,15 +1,11 @@
 # From
 FROM php:8.4.16-fpm-alpine3.23
 
-# Labels
-LABEL creatorName="Vagner dos Santos Cardoso"
-LABEL creatorEmail="vagnercardosoweb@gmail.com"
+LABEL maintainer="manu"
 
-# Set timezone
 ENV TZ=${TZ:-UTC}
-RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+ENV WORKDIR=/var/www
 
-# Install non-dev dependencies
 RUN set -eux \
   && apk add --no-cache \
   git vim zip unzip bash curl tzdata icu-libs \
@@ -18,7 +14,6 @@ RUN set -eux \
   linux-headers oniguruma libxslt libpq vips \
   gmp libzip libxml2 freetds
 
-# Install dependencies
 RUN set -eux \
   && apk add --no-cache --virtual .build_deps \
   libpng-dev libwebp-dev libjpeg-turbo-dev freetype-dev \
@@ -75,29 +70,19 @@ RUN set -eux \
   \
   # Clean php extensions
   && rm -rf /tmp/pear \
-  && docker-php-source delete \
-  \
-  # Clean up
-  && apk del --purge .build_deps \
-  && rm -rf /var/cache/apk/*
+  && apk del --no-network .build_deps
 
 # Install composer
 COPY --from=composer:2.9.5 /usr/bin/composer /usr/local/bin/composer
 
 # Copy php settings
 COPY ./php.ini ${PHP_INI_DIR}/conf.d/99-php.ini
-
-# Copy entrypoint
 COPY ./entrypoint /usr/local/bin/docker-entrypoint
-RUN chmod +x /usr/local/bin/docker-entrypoint
 
 # Workdir
 ENV WORKDIR=/var/www
 RUN mkdir -p ${WORKDIR}
 WORKDIR ${WORKDIR}
 
-# Expose port
 EXPOSE 9000
-
-# Run entrypoint
 CMD ["docker-entrypoint"]

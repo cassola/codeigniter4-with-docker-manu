@@ -1,0 +1,255 @@
+Fase1- Modelo de datos, choices, relaciones, auditoría y seed
+
+Eres un generador experto de Codeigniter 4. Necesito que construyas el ESQUEMA COMPLETO en mysql para una solución de “Gestión de tickets de reparación” multi-sede con trazabilidad ISO 9001.
+
+
+OBJETIVO: Entregar el modelo de datos (tablas, columnas, tipos, choices, relaciones), habilitar auditoría, restricciones (no borrado), y cargar datos iniciales (seed) con 4 sedes: ESP, MEX, BRA, USA.
+
+CONVENCIONES:
+- Prefijo de tablas/columnas: cr_
+- Usar Dataverse choices (global choices) donde aplique.
+- Habilitar Dataverse Auditing en tablas críticas.
+- Evitar borrados: usar cr_isactive y/o estados (Cancelled/Inactivo).
+- Asegurar índices: cr_sapnotice, cr_serialnumber, cr_ticketnumber.
+
+========================================================
+1) CHOICES (GLOBAL)
+========================================================
+Crear choices:
+A) cr_ticketstatus: Received, Diagnosis, WaitingParts, RepairInProgress, Testing, ReadyToShip, Shipped, Closed, Cancelled
+B) cr_priority: Low, High, Critical
+C) cr_returnstatus: Planned, InTransit, Delivered
+D) cr_worktype: Diagnosis, Repair, Testing, Rework
+E) cr_movementtype: TransferOut, TransferIn, ReturnOut, ReturnIn, ShipToCustomer, ReceiveFromCustomer
+F) cr_ownertype: Customer, Company
+G) cr_assetstatus: InService, InRepair, Quarantine, Scrapped, SpareStock
+H) cr_outcome: RepairedReturned, ExchangePerformed, NonRepairable, Cancelled, Other
+I) cr_languagemode: Auto, Manual
+J) cr_language: es, pt, it, en
+K) cr_partrequeststatus: Requested, Approved, Ordered, Received, Assigned, Cancelled
+L) cr_documenttype: TransportDamagePhoto, DiagnosticReport, BeforeAfterPhotos, TestEvidence, ShippingDoc, ExchangeDoc, Other
+M) cr_nctype: Rework, TestFail, DocumentationError, TransportDamage, RepeatedFailure, Other
+N) cr_ncstatus: Open, Closed
+
+========================================================
+2) TABLAS MAESTRAS
+========================================================
+2.1 cr_site (Sedes)
+- cr_sitecode (Texto, único) -> ESP/MEX/BRA/USA
+- cr_name (Texto)
+- cr_country (Texto)
+- cr_city (Texto)
+- cr_isactive (Sí/No)
+- cr_defaultpriority (Choice cr_priority)
+- cr_defaultinitialstatus (Choice cr_ticketstatus)
+- cr_requiresolutiontoclose (Sí/No)
+- cr_requirematerialstoclose (Sí/No)
+- cr_requiretestingchecklisttoship (Sí/No)
+
+Seed sedes:
+- ESP: Castellón, España
+- MEX: Monterrey NL, México
+- BRA: Rio Claro, Brasil
+- USA: Nashville, TN, EEUU
+
+2.2 cr_accountplant (Cliente/Planta)
+- cr_name (Texto)
+- cr_code (Texto opcional)
+- cr_isactive (Sí/No)
+
+2.3 cr_person (Personal)
+- cr_fullname (Texto)
+- cr_email (Texto único)
+- cr_phone (Texto opcional)
+- cr_isactive (Sí/No)
+
+2.4 cr_role (Roles operativos)
+- cr_name (Texto único): Recepción, Técnico, Coordinación, Logística, Administración, Calidad
+
+2.5 cr_person_role_site (Asignación persona-rol-sede)
+- cr_person (Lookup cr_person)
+- cr_role (Lookup cr_role)
+- cr_site (Lookup cr_site)
+- cr_startdate (Fecha)
+- cr_enddate (Fecha opcional)
+- cr_isprimary (Sí/No)
+- cr_level (Texto/Choice opcional: Operator/Senior/Approver)
+
+2.6 cr_prioritysla
+- cr_priority (Choice cr_priority)
+- cr_firstresponse_hours (Número)
+- cr_repairtarget_hours (Número)
+- cr_closuretarget_hours (Número)
+
+Seed SLA:
+- Low: 48/120/168
+- High: 8/48/72
+- Critical: 2/24/48
+(ajustable)
+
+2.7 cr_localizationstring (i18n)
+- cr_key (Texto único)
+- cr_text_es (Texto)
+- cr_text_pt (Texto)
+- cr_text_it (Texto)
+- cr_text_en (Texto)
+- cr_module (Texto opcional)
+- cr_isactive (Sí/No)
+
+Seed mínimo: 20 claves (BTN_SAVE, BTN_CANCEL, LBL_STATUS, LBL_PRIORITY, MSG_REQUIRED, etc.)
+
+2.8 cr_usersettings
+- cr_useremail (Texto, único) o lookup a systemuser si se prefiere
+- cr_languagemode (Choice cr_languagemode)
+- cr_preferredlanguage (Choice cr_language)
+- cr_defaultsite (Lookup cr_site)
+- cr_defaultview (Texto/Choice opcional)
+- cr_notificationsenabled (Sí/No)
+
+========================================================
+3) ACTIVOS Y PROPIEDAD
+========================================================
+3.1 cr_asset
+- cr_assetcode (Texto opcional)
+- cr_serialnumber (Texto, indexado)
+- cr_model (Texto opcional)
+- cr_ownertype (Choice cr_ownertype)
+- cr_owneraccountplant (Lookup cr_accountplant, nullable)
+- cr_assetstatus (Choice cr_assetstatus)
+- cr_currentsite (Lookup cr_site, nullable)
+- cr_notes (Texto largo opcional)
+- cr_isactive (Sí/No)
+
+========================================================
+4) TICKETS Y TRAZABILIDAD
+========================================================
+4.1 cr_ticket
+- cr_ticketnumber (Autonumber)
+- cr_sitein (Lookup cr_site) INMUTABLE (regla por app/plug-in)
+- cr_currentsite (Lookup cr_site)
+- cr_closingsite (Lookup cr_site, nullable)
+- cr_sapnotice (Texto obligatorio, indexado)
+- cr_accountplant (Lookup cr_accountplant)
+- cr_asset (Lookup cr_asset)
+- cr_reportedfailure (Texto largo)
+- cr_detectedfailure (Texto largo)
+- cr_repairsolution (Texto largo)
+- cr_priority (Choice cr_priority)
+- cr_status (Choice cr_ticketstatus)
+- cr_sla_duedate (FechaHora)
+- cr_receiveddate (FechaHora)
+- cr_closeddate (FechaHora)
+- cr_nonrepairable (Sí/No)
+- cr_warranty (Sí/No)
+- cr_cancelreason (Texto)
+Cierre técnico/admin:
+- cr_technicalclosureready (Sí/No)
+- cr_technicalclosuredate (FechaHora)
+- cr_technicalclosureby (Texto o lookup)
+- cr_administrativeclosuredone (Sí/No)
+- cr_administrativeclosuredate (FechaHora)
+- cr_administrativeclosureby (Texto o lookup)
+Retorno:
+- cr_returnrequired (Sí/No)
+- cr_returnstatus (Choice cr_returnstatus)
+- cr_returntargetdate (FechaHora opcional)
+Outcome:
+- cr_outcome (Choice cr_outcome)
+
+4.2 cr_tickethistory (append-only)
+- cr_ticket (Lookup cr_ticket)
+- cr_fromstatus (Choice cr_ticketstatus)
+- cr_tostatus (Choice cr_ticketstatus)
+- cr_siteattime (Lookup cr_site)
+- cr_changedby (Texto o lookup systemuser)
+- cr_changedon (FechaHora)
+- cr_comment (Texto largo)
+
+4.3 cr_worklog
+- cr_ticket (Lookup)
+- cr_worktype (Choice cr_worktype)
+- cr_sitework (Lookup cr_site)
+- cr_technician (Lookup cr_person)
+- cr_start (FechaHora)
+- cr_end (FechaHora)
+- cr_result (Texto/Choice opcional)
+- cr_notes (Texto largo)
+
+4.4 cr_ticketmaterial
+- cr_ticket (Lookup)
+- cr_partname (Texto)
+- cr_quantity (Número)
+- cr_usedby (Lookup cr_person)
+- cr_usedon (FechaHora)
+- cr_comment (Texto largo)
+
+4.5 cr_partrequest (recomendado)
+- cr_ticket (Lookup)
+- cr_partname (Texto)
+- cr_quantity (Número)
+- cr_status (Choice cr_partrequeststatus)
+- cr_requestedby (Lookup cr_person o Texto)
+- cr_requestedon (FechaHora)
+- cr_receivedon (FechaHora)
+- cr_notes (Texto largo)
+
+4.6 cr_movement
+- cr_ticket (Lookup nullable)
+- cr_asset (Lookup cr_asset obligatorio)
+- cr_movementtype (Choice cr_movementtype)
+- cr_fromsite (Lookup cr_site nullable)
+- cr_tosite (Lookup cr_site nullable)
+- cr_datetime (FechaHora)
+- cr_reference (Texto)
+- cr_executedby (Texto o lookup)
+- cr_notes (Texto largo)
+
+4.7 cr_ticketdocument
+- cr_ticket (Lookup)
+- cr_documenttype (Choice cr_documenttype)
+- cr_file (File)
+- cr_author (Texto o lookup)
+- cr_createdon (FechaHora)
+- cr_notes (Texto largo)
+
+========================================================
+5) EXCHANGE / SUSTITUCIÓN
+========================================================
+5.1 cr_assetexchange
+- cr_ticket (Lookup cr_ticket)
+- cr_accountplant (Lookup cr_accountplant)
+- cr_incomingasset (Lookup cr_asset) obligatorio
+- cr_replacementasset (Lookup cr_asset) obligatorio
+- cr_exchangedate (FechaHora)
+- cr_reason (Texto/Choice)
+- cr_approvedby (Texto o lookup)
+- cr_incomingretained (Sí/No, default true)
+- cr_replacementdelivered (Sí/No, default true)
+
+========================================================
+6) NO CONFORMIDADES (ISO 10.2) (recomendado)
+========================================================
+6.1 cr_nonconformity
+- cr_ticket (Lookup)
+- cr_type (Choice cr_nctype)
+- cr_severity (Texto/Choice opcional)
+- cr_description (Texto largo)
+- cr_rootcause (Texto largo)
+- cr_correctiveaction (Texto largo)
+- cr_owner (Lookup cr_person)
+- cr_status (Choice cr_ncstatus)
+- cr_closedon (FechaHora)
+
+========================================================
+7) AUDITORÍA Y SEED DE EJEMPLO
+========================================================
+- Habilitar auditing en: cr_ticket, cr_asset, cr_tickethistory, cr_worklog, cr_movement, cr_ticketmaterial, cr_assetexchange, cr_ticketdocument, cr_person, cr_usersettings.
+- Seed de ejemplo:
+  - 2 clientes/planta
+  - 4 personas (1 por rol)
+  - 2 activos (uno Customer, uno Company)
+  - 1 ticket ejemplo con history + worklog + material + movimiento.
+
+ENTREGABLE:
+- Describir el esquema creado y las relaciones 1:N / N:N.
+- Exportar/representar el modelo como diccionario de datos (tabla->columnas->tipo->restricciones).

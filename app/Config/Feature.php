@@ -20,6 +20,12 @@ class Feature extends BaseConfig
     public bool $oldFilterOrder = false;
 
     /**
+     * When true, locale negotiation requires exact locale matches.
+     * Needed by newer framework locale negotiation flow.
+     */
+    public bool $strictLocaleNegotiation = false;
+
+    /**
      * The behavior of `limit(0)` in Query Builder.
      *
      * If true, `limit(0)` returns all records. (the behavior of 4.4.x or before in version 4.x.)

@@ -1,0 +1,58 @@
+Fase 3- Canvas App responsive: estructura, navegación, componentes y i18n (ES/PT/IT/EN)
+Eres un experto en Codeigniter 4 (responsive) con mysql. Construye una App responsive al estilo de PowerApp (tablet/desktop/móvil) conectada al esquema cr_ ya creado.
+
+OBJETIVO: App completa para gestionar reparaciones multi-sede con estilo típico Power Apps: limpio, moderno, responsive, con navegación clara y componentes reutilizables. Debe soportar i18n ES/PT/IT/EN por usuario (Auto/Manual).
+
+REQUISITOS DE UI:
+- Responsive usando containers (horizontal/vertical) y breakpoints si aplica.
+- Estilo Power Apps moderno: header, navegación lateral (desktop) y navegación compacta (móvil).
+- Controles: galerías con tarjetas, badges de estado, formularios con validación.
+- Búsqueda rápida global por: TicketNumber, Aviso SAP, Nº Serie.
+
+I18N:
+- Cargar cr_usersettings del usuario (por email) y determinar varLang:
+  - Si LanguageMode=Manual -> PreferredLanguage
+  - Si Auto -> mapear Language(): es/pt/it/en, default en
+- Cargar cr_localizationstring en colI18n
+- Patrón: LookUp(colI18n, cr_key="...").cr_text_<lang>
+- Donde sea posible usar labels multilingües nativas de Choice.
+
+PANTALLAS (mínimas):
+1) Home/Dashboard
+   - KPIs (conteos por estado, SLA en riesgo, tickets abiertos por sede)
+   - Accesos: Crear Ticket, Tickets, Activos, Movimientos, Configuración
+2) Tickets_List
+   - filtros: sede, estado, prioridad, técnico, cliente/planta, SLA, fechas
+   - vistas: Mis tickets / Mi sede / Global (según rol)
+3) Ticket_Detail
+   - tabs o secciones: Resumen, Timeline, Trabajo (WorkLog), Materiales, Repuestos, Documentos, Movimientos, Exchange, Calidad (NC)
+   - acciones: cambiar estado, transferir sede, preparar envío, cerrar técnico, cerrar admin
+4) Ticket_Create
+   - formulario: sede ingreso, aviso SAP, cliente/planta, activo/serial, falla reportada, prioridad por defecto sede
+   - al guardar: crear tickethistory inicial y SLA due date
+5) Assets_List
+6) Asset_360
+   - ficha activo + historial tickets + movimientos + exchanges
+7) Movements_List + Movement_Create
+8) PartsRequests_List (si existe) + gestión desde ticket
+9) Exchange_Create (desde ticket)
+10) NonConformities_List (rol Calidad)
+11) People_Admin (gestión personal) (solo roles autorizados)
+12) Settings_User
+   - idioma Auto/Manual + selector (ES/PT/IT/EN)
+   - sede por defecto
+   - perfil (roles/sedes) solo lectura
+13) Settings_System (solo Admin/Calidad/Coordinación)
+   - sedes + políticas
+   - SLA/prioridades
+   - traducciones (cr_localizationstring)
+
+LÓGICA UI:
+- Control de permisos: si rol no autorizado, ocultar botones/acciones.
+- Validación: mostrar mensajes localizados (i18n).
+- Timeline: combinar cr_tickethistory + cr_worklog + cr_movement en vista cronológica.
+
+ENTREGABLE:
+- App con navegación completa.
+- Componentes reutilizables y variables globales.
+- Descripción breve de la arquitectura en la app (OnStart, colecciones, etc.).

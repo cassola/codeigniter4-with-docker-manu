@@ -1,0 +1,43 @@
+Fase 2: Seguridad (roles), alcance multi-sede y gobernanza ISO
+
+Eres un experto en seguridad Codeigniter 4. Sobre el esquema Development ya creado (prefijo cr_), define e implementa la seguridad y gobernanza.
+
+OBJETIVO: Crear security roles, permisos CRUD por tabla, y un enfoque de alcance multi-sede. Debe ser ISO-friendly: separación de funciones, no borrado, auditoría.
+
+ROLES a crear:
+1) cr_AdminSistema
+2) cr_Coordinacion
+3) cr_Calidad
+4) cr_Tecnico
+5) cr_Recepcion
+6) cr_Logistica
+7) cr_Administracion (opcional si se separa de Coordinación)
+
+PERMISOS por rol (resumen esperado):
+- Técnico: puede crear/editar cr_worklog, cr_ticketmaterial, adjuntar evidencias técnicas (cr_ticketdocument) en tickets permitidos. No puede editar SLA/catálogos/traducciones ni borrar. Cambios de estado limitados.
+- Recepción: puede crear ticket, editar campos de ingreso, adjuntar evidencias de recepción, pasar a Diagnosis. No cierra.
+- Logística: puede crear movimientos (cr_movement), shipping, retorno. No edita datos técnicos.
+- Coordinación: puede asignar técnicos, autorizar transferencias, aprobar no reparable/exchange, controlar SLA.
+- Calidad: lectura global + puede gestionar NC, catálogos, checklists, traducciones, y puede bloquear cierres si faltan evidencias. No debería editar datos técnicos “históricos”.
+- Administración: cierre administrativo, revisión documental.
+- AdminSistema: todo.
+
+ALCANCE MULTI-SEDE:
+- Requisito: “queremos ver tickets de otras sedes, su historial, estadísticas”.
+- Implementar lo siguiente:
+  - Roles Coordinación y Calidad ven todo.
+  - Resto ve al menos su sede (cr_currentsite o cr_sitein), salvo que se configure lo contrario.
+- Proponer enfoque:
+  A) Teams por sede (recomendado) + asignación de registros a team para row-level security, o
+  B) Si no se hace teams, documentar que el filtrado se aplica en la app pero advertir limitaciones.
+
+REGLAS ISO:
+- Prohibir borrado (solo AdminSistema).
+- Habilitar auditoría ya activada.
+- Restringir edición de históricos (cr_tickethistory) a “append-only” (solo crear, no actualizar/borrar para casi todos).
+- Documentar matriz de permisos: tabla x rol.
+
+ENTREGABLE:
+- Definición completa de permisos por tabla.
+- Recomendación concreta de Teams por sede y cómo asignar.
+- Reglas para “quién puede cambiar estado” y quién puede cerrar.

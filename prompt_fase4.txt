@@ -1,0 +1,76 @@
+FASE 4 — Reglas de negocio y automatismos: transiciones, retorno, SLA, exchange, no conformidades, evidencias
+
+Eres experto en lógica Codeigniter 4 y gobernanza de procesos. Implementa en la Canvas App (y/o flujos Power Automate opcionales) toda la lógica de negocio y validaciones para ISO y multi-sede.
+
+OBJETIVO: Asegurar que el proceso se cumple y se registra todo (historial, sede, evidencias), con bloqueo de cierres cuando falten requisitos.
+
+1) CAMBIO DE ESTADO (acciones controladas)
+- Implementar función/acción ChangeStatus(ticket, newStatus, comment).
+- Validar transiciones permitidas.
+- Al cambiar:
+  - Patch cr_ticket.cr_status
+  - Crear cr_tickethistory (from/to, siteattime=ticket.cr_currentsite, changedby, changedon, comment)
+
+2) VALIDACIONES por estado
+- Diagnosis: activo + datos ingreso completos
+- WaitingParts: debe existir cr_partrequest en estado Requested/Ordered o comentario justificado
+- RepairInProgress: técnico asignado o WorkLog de inicio
+- Testing: solución obligatoria si cr_site.requiresolutiontoclose=true
+- ReadyToShip: checklist/evidencia de prueba obligatoria si policy=true
+- Shipped: datos logísticos y documento ShippingDoc si política lo exige
+- Closed: 
+  - AdministrativeClosureDone=true
+  - si ReturnRequired=true -> ReturnStatus MUST be Delivered
+  - si policy: solución/materiales/checklist según sede
+
+3) SLA
+- Al crear ticket, calcular cr_sla_duedate con cr_prioritysla (sumar horas a fecha recepción)
+- Indicador SLAStatus (en plazo / en riesgo / fuera) para dashboard
+
+4) TRANSFERENCIA ENTRE SEDES
+- Acción TransferSite(ticket, toSite, reason):
+  - Crear movimiento TransferOut (from=current, to=toSite)
+  - Patch ticket.cr_currentsite = toSite, y asset.cr_currentsite = toSite
+  - Marcar ticket.cr_returnrequired = true
+  - Crear tickethistory opcional con comentario de transferencia
+
+5) RETORNO OBLIGATORIO
+- Si ticket.cr_returnrequired=true:
+  - No permitir cierre final (Closed) hasta que exista movimiento ReturnIn hacia sitein y ticket.cr_returnstatus=Delivered
+- Acción logística: RegisterReturnOut / RegisterReturnIn:
+  - Crear movimientos ReturnOut y ReturnIn
+  - Al ReturnIn: set ticket.cr_returnstatus=Delivered
+
+6) EXCHANGE / SUSTITUCIÓN
+- Acción CreateExchange(ticket, incomingAsset, replacementAsset, customerPlant, reason, approvedBy, document):
+  - Crear cr_assetexchange
+  - Actualizar incomingAsset: ownertype=Company, owneraccountplant=null, status=InRepair/Quarantine
+  - Actualizar replacementAsset: ownertype=Customer, owneraccountplant=customerPlant
+  - ticket.cr_outcome=ExchangePerformed
+  - Requerir documento tipo ExchangeDoc
+
+7) NO REPARABLE
+- Si cr_ticket.cr_nonrepairable=true:
+  - requerir motivo + aprobación (Coordinación/Calidad)
+  - outcome=NonRepairable
+  - evidencias si política
+
+8) EVIDENCIAS
+- Si daño transporte -> requerir documento TransportDamagePhoto antes de avanzar.
+- Requerir TestEvidence para ReadyToShip si policy=true.
+
+9) APPEND-ONLY
+- No permitir edición/borrado de cr_tickethistory desde UI (solo crear).
+
+OPCIONAL Power Automate:
+- Notificar SLA en riesgo.
+- Notificar retorno pendiente tras X días.
+- Generar reporte PDF de cierre (si se requiere).
+
+ENTREGABLE:
+- Descripción de reglas implementadas.
+- Pruebas de escenario:
+  a) ticket normal
+  b) transferencia + retorno
+  c) exchange
+  d) nonrepairable

@@ -1,0 +1,40 @@
+FASE 5 — Documentación completa (funcional + técnica) dentro de la solución.
+
+Eres un arquitecto de documentación para soluciones Codeigniter 4 e ISO 9001. Genera la documentación completa de la app y del proceso, en formato Markdown (o en una tabla Dataverse “cr_appdoc” si prefieres almacenarlo).
+
+OBJETIVO: Documentar para operación y auditoría ISO.
+
+DOCUMENTOS A GENERAR:
+1) Manual por rol:
+- Recepción: alta ticket, evidencias recepción, cambios permitidos
+- Técnico: diagnóstico, worklog, materiales, testing, evidencias técnicas
+- Logística: movimientos, shipped, retorno, documentación envío
+- Coordinación: asignaciones, transferencias, aprobaciones, SLA
+- Calidad: NC, auditoría, catálogos, checklists, traducciones
+- AdminSistema: configuración global y mantenimiento
+
+2) Procedimiento operativo (ciclo completo) alineado a estados y pantallas.
+
+3) Reglas de negocio:
+- transiciones de estados
+- validaciones
+- retorno obligatorio
+- exchange
+- no reparable
+- cierre técnico vs admin
+- no borrado y auditoría
+
+4) Diccionario de datos:
+- tablas, campos, tipos, relaciones, índices
+
+5) Matriz ISO 9001:
+- Requisito -> evidencia en el sistema (tabla/campo/registro/documento)
+
+6) Guía i18n:
+- cómo mantener claves y traducciones
+- política de cambios (Calidad/Admin)
+- cómo se determina idioma (Auto/Manual)
+
+ENTREGABLE:
+- Paquete de Markdown organizado por carpetas (Docs/...)
+- Índice general (README) con enlaces.
